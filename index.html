@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Umbrella Checker</title>
+    <style>
+      /* Color variables for easy theming */
+      :root {
+        --sky-sunny: #87c5ea;
+        --sky-rainy: #5c7a8a;
+        --sky-deep: #072a40;
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --ink: #123047;
+        --muted: #4d6478;
+        --accent: #1d8ad4;
+        --rain-banner: #e74c3c;
+        --dry-banner: #27ae60;
+        --shadow: 0 18px 50px rgba(7, 42, 64, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        color: var(--ink);
+        /* Default sunny background, will change dynamically */
+        background:
+          radial-gradient(circle at 12% 12%, #3aa0e3 0, transparent 32%),
+          radial-gradient(circle at 88% 8%, #7ec8f5 0, transparent 28%),
+          linear-gradient(180deg, var(--sky-sunny) 0%, #0b3d5c 55%, var(--sky-deep) 100%);
+        transition: background 0.5s ease;
+      }
+
+      /* Rainy background class */
+      body.rainy {
+        background:
+          radial-gradient(circle at 12% 12%, #4a6a7a 0, transparent 32%),
+          radial-gradient(circle at 88% 8%, #6b8a9a 0, transparent 28%),
+          linear-gradient(180deg, var(--sky-rainy) 0%, #3d5a6a 55%, #1a2a3a 100%);
+      }
+
+      .wrap {
+        max-width: 40rem;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 3rem;
+      }
+
+      /* Header section */
+      header {
+        text-align: center;
+        color: white;
+        margin-bottom: 2rem;
+      }
+
+      .icon {
+        font-size: 3.5rem;
+        line-height: 1;
+        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
+        margin-bottom: 0.5rem;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(2rem, 5vw, 2.6rem);
+        letter-spacing: -0.03em;
+        font-weight: 700;
+      }
+
+      header p {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 1.1rem;
+        font-weight: 400;
+      }
+
+      /* Search form */
+      form {
+        display: flex;
+        gap: 0.75rem;
+        background: var(--card-bg);
+        padding: 0.65rem;
+        border-radius: 999px;
+        box-shadow: var(--shadow);
+        margin-bottom: 1.5rem;
+      }
+
+      label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      input[type="text"] {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        font-size: 1.05rem;
+        padding: 0.85rem 1.1rem;
+        outline: none;
+        min-width: 0;
+      }
+
+      button.search-btn {
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: white;
+        font: inherit;
+        font-weight: 650;
+        font-size: 1rem;
+        padding: 0.85rem 1.4rem;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      button.search-btn:hover,
+      button.search-btn:focus-visible {
+        background: #1574b5;
+      }
+
+      button.search-btn:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+
+      /* Main card panel */
+      .panel {
+        background: var(--card-bg);
+        border-radius: 1.5rem;
+        padding: 1.8rem 1.6rem 2rem;
+        box-shadow: var(--shadow);
+        min-height: 10rem;
+      }
+
+      /* Status messages */
+      .status {
+        margin: 0;
+        color: var(--muted);
+        text-align: center;
+        font-size: 1.05rem;
+        padding: 2rem 0;
+      }
+
+      .status.error {
+        color: var(--rain-banner);
+        font-weight: 600;
+      }
+
+      .status.loading {
+        color: var(--muted);
+      }
+
+      /* Result section */
+      .city {
+        margin: 0 0 1.2rem;
+        font-size: 1.25rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      /* Temperature with toggle */
+      .temp-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 1.2rem;
+      }
+
+      .temp-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .temp-toggle {
+        background: #eef5fb;
+        border: 0;
+        border-radius: 8px;
+        padding: 0.4rem 0.7rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .temp-toggle:hover {
+        background: #d9e8f5;
+      }
+
+      /* Result banner */
+      .result-banner {
+        padding: 1.2rem 1rem;
+        border-radius: 1rem;
+        text-align: center;
+        font-size: clamp(1.4rem, 4vw, 1.8rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .result-banner.umbrella {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+      }
+
+      .result-banner.dry {
+        background: linear-gradient(135deg, #27ae60 0%, #1e7a46 100%);
+        color: white;
+      }
+
+      .banner-emoji {
+        font-size: 1.3em;
+      }
+
+      /* Forecast cards */
+      .forecast-section {
+        margin-top: 1.5rem;
+      }
+
+      .forecast-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 0.8rem;
+        font-weight: 600;
+      }
+
+      .forecast-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+      }
+
+      .forecast-card {
+        background: #eef5fb;
+        border-radius: 1rem;
+        padding: 1rem 0.8rem;
+        text-align: center;
+      }
+
+      .forecast-day {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+
+      .forecast-temp {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 0.3rem;
+      }
+
+      .forecast-rain {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .forecast-rain.high {
+        color: var(--rain-banner);
+        font-weight: 600;
+      }
+
+      /* Utility classes */
+      .hidden {
+        display: none;
+      }
+
+      footer {
+        margin-top: 1.5rem;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85rem;
+      }
+
+      footer a {
+        color: inherit;
+        text-decoration: underline;
+      }
+
+      /* Mobile responsiveness */
+      @media (max-width: 480px) {
+        .wrap {
+          padding: 1.5rem 1rem 2rem;
+        }
+
+        h1 {
+          font-size: 1.7rem;
+        }
+
+        header p {
+          font-size: 1rem;
+        }
+
+        .panel {
+          padding: 1.4rem 1.2rem 1.6rem;
+        }
+
+        .forecast-cards {
+          gap: 0.5rem;
+        }
+
+        .forecast-card {
+          padding: 0.85rem 0.6rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="icon" aria-hidden="true">☂️</div>
+        <h1>Umbrella Checker</h1>
+        <p>Should you carry an umbrella today?</p>
+      </header>
+
+      <form id="city-form">
+        <label for="city">City name</label>
+        <input
+          id="city"
+          type="text"
+          name="city"
+          placeholder="e.g. London, Tokyo, Mumbai"
+          autocomplete="address-level2"
+          required
+        />
+        <button type="submit" class="search-btn" id="check-btn">Check</button>
+      </form>
+
+      <section class="panel" aria-live="polite">
+        <p id="status" class="status">Enter a city to see today's rain chance.</p>
+        
+        <div id="result" class="hidden">
+          <p class="city" id="place"></p>
+          
+          <!-- Temperature with toggle -->
+          <div class="temp-section">
+            <span class="temp-value" id="temp"></span>
+            <button class="temp-toggle" id="temp-toggle" aria-label="Toggle temperature unit">°C / °F</button>
+          </div>
+
+          <!-- Result banner with emoji -->
+          <div id="verdict-banner" class="result-banner">
+            <span class="banner-emoji" id="verdict-emoji"></span>
+            <span id="verdict-text"></span>
+          </div>
+
+          <!-- 3-day forecast -->
+          <div class="forecast-section">
+            <p class="forecast-label">Next 3 Days</p>
+            <div class="forecast-cards" id="forecast-cards">
+              <!-- Cards will be generated by JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Weather from
+        <a href="https://open-meteo.com/" rel="noopener noreferrer">Open-Meteo</a>
+        (no API key). Carry an umbrella at 40% rain or more.
+      </footer>
+    </div>
+
+    <script>
+      // API endpoints
+      const GEO_URL = "https://geocoding-api.open-meteo.com/v1/search";
+      const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+      const RAIN_THRESHOLD = 40;
+
+      // DOM elements
+      const form = document.getElementById("city-form");
+      const cityInput = document.getElementById("city");
+      const checkBtn = document.getElementById("check-btn");
+      const statusEl = document.getElementById("status");
+      const resultEl = document.getElementById("result");
+      const placeEl = document.getElementById("place");
+      const tempEl = document.getElementById("temp");
+      const tempToggle = document.getElementById("temp-toggle");
+      const verdictBanner = document.getElementById("verdict-banner");
+      const verdictEmoji = document.getElementById("verdict-emoji");
+      const verdictText = document.getElementById("verdict-text");
+      const forecastCards = document.getElementById("forecast-cards");
+
+      // State for temperature conversion
+      let currentTempCelsius = null;
+      let isCelsius = true;
+
+      // Show status message (loading or error)
+      function showStatus(message, isError) {
+        resultEl.classList.add("hidden");
+        statusEl.classList.toggle("error", Boolean(isError));
+        statusEl.classList.toggle("loading", !isError);
+        statusEl.textContent = message;
+        statusEl.classList.remove("hidden");
+      }
+
+      // Format place name with country
+      function formatPlace(place) {
+        const parts = [place.name, place.admin1, place.country].filter(Boolean);
+        return [...new Set(parts)].join(", ");
+      }
+
+      // Format day name from date
+      function formatDayName(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString("en-US", { weekday: "short" });
+      }
+
+      // Convert temperature between Celsius and Fahrenheit
+      function celsiusToFahrenheit(celsius) {
+        return Math.round((celsius * 9/5) + 32);
+      }
+
+      // Update temperature display based on current unit
+      function updateTempDisplay() {
+        if (currentTempCelsius === null) return;
+        
+        if (isCelsius) {
+          tempEl.textContent = `${Math.round(currentTempCelsius)}°C`;
+        } else {
+          tempEl.textContent = `${celsiusToFahrenheit(currentTempCelsius)}°F`;
+        }
+
+        // Update forecast cards too
+        const forecastTempEls = document.querySelectorAll('.forecast-temp');
+        forecastTempEls.forEach((el, index) => {
+          const tempC = parseFloat(el.dataset.celsius);
+          if (tempC) {
+            el.textContent = isCelsius 
+              ? `${Math.round(tempC)}°` 
+              : `${celsiusToFahrenheit(tempC)}°`;
+          }
+        });
+      }
+
+      // Toggle temperature unit
+      tempToggle.addEventListener("click", () => {
+        isCelsius = !isCelsius;
+        updateTempDisplay();
+      });
+
+      // Look up city coordinates from name
+      async function lookupCity(name) {
+        const url = `${GEO_URL}?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error("Could not look up that city right now.");
+        }
+        const data = await response.json();
+        const place = data.results && data.results[0];
+        if (!place) {
+          throw new Error(`Unknown city: "${name}". Try a nearby city or add the country.`);
+        }
+        return place;
+      }
+
+      // Get weather data (current + 4 days for forecast)
+      async function lookupWeather(lat, lon) {
+        const params = new URLSearchParams({
+          latitude: String(lat),
+          longitude: String(lon),
+          current: "temperature_2m",
+          daily: "temperature_2m_max,precipitation_probability_max",
+          forecast_days: "4", // Today + 3 days
+          timezone: "auto",
+        });
+        const response = await fetch(`${FORECAST_URL}?${params}`);
+        if (!response.ok) {
+          throw new Error("Could not load weather data. Please try again.");
+        }
+        const data = await response.json();
+        
+        const temperature = data.current && data.current.temperature_2m;
+        const rainChance =
+          data.daily &&
+          Array.isArray(data.daily.precipitation_probability_max) &&
+          data.daily.precipitation_probability_max[0];
+
+        if (typeof temperature !== "number" || typeof rainChance !== "number") {
+          throw new Error("Weather data was incomplete for that location.");
+        }
+
+        // Get forecast data (skip today, take next 3 days)
+        const forecast = [];
+        if (data.daily && data.daily.time) {
+          for (let i = 1; i < 4 && i < data.daily.time.length; i++) {
+            forecast.push({
+              date: data.daily.time[i],
+              temp: data.daily.temperature_2m_max[i],
+              rain: data.daily.precipitation_probability_max[i],
+            });
+          }
+        }
+
+        return { temperature, rainChance, forecast };
+      }
+
+      // Generate forecast cards HTML
+      function renderForecast(forecast) {
+        forecastCards.innerHTML = "";
+        
+        forecast.forEach((day) => {
+          const card = document.createElement("div");
+          card.className = "forecast-card";
+          
+          const dayName = formatDayName(day.date);
+          const temp = day.temp;
+          const rain = day.rain;
+          const rainClass = rain >= RAIN_THRESHOLD ? "high" : "";
+          
+          card.innerHTML = `
+            <div class="forecast-day">${dayName}</div>
+            <div class="forecast-temp" data-celsius="${temp}">${Math.round(temp)}°</div>
+            <div class="forecast-rain ${rainClass}">${Math.round(rain)}% rain</div>
+          `;
+          
+          forecastCards.appendChild(card);
+        });
+      }
+
+      // Handle form submission
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const name = cityInput.value.trim();
+        
+        if (!name) {
+          showStatus("Please enter a city name.", true);
+          return;
+        }
+
+        checkBtn.disabled = true;
+        showStatus(`Checking ${name}…`);
+
+        try {
+          const place = await lookupCity(name);
+          const weather = await lookupWeather(place.latitude, place.longitude);
+          const needsUmbrella = weather.rainChance >= RAIN_THRESHOLD;
+
+          // Store temperature for conversion
+          currentTempCelsius = weather.temperature;
+          isCelsius = true;
+
+          // Update page background based on rain likelihood
+          document.body.classList.toggle("rainy", needsUmbrella);
+
+          // Hide status, show results
+          statusEl.classList.add("hidden");
+          statusEl.classList.remove("error", "loading");
+          resultEl.classList.remove("hidden");
+
+          // Display place name
+          placeEl.textContent = formatPlace(place);
+
+          // Display temperature
+          updateTempDisplay();
+
+          // Display verdict banner with emoji
+          verdictBanner.className = `result-banner ${needsUmbrella ? "umbrella" : "dry"}`;
+          verdictEmoji.textContent = needsUmbrella ? "🌧️" : "☀️";
+          verdictText.textContent = needsUmbrella
+            ? "Carry an umbrella"
+            : "No umbrella needed";
+
+          // Render forecast cards
+          renderForecast(weather.forecast);
+
+        } catch (error) {
+          const message =
+            error instanceof TypeError
+              ? "Network error. Check your connection and try again."
+              : error.message || "Something went wrong. Please try again.";
+          showStatus(message, true);
+          // Reset background on error
+          document.body.classList.remove("rainy");
+        } finally {
+          checkBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
